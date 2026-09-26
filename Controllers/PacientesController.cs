@@ -22,12 +22,10 @@ public class PacientesController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetPacientes()
     {
-        var pacientes = await _context.Pacientes.ToListAsync();
-
-        var pacientesDTO = pacientes
+        List<Paciente> pacientes = await _context.Pacientes.ToListAsync();
+        List<PacienteReadDTO> pacientesDTO = pacientes
             .Select(p => PacienteMapper.ToDTO(p))
             .ToList();
-
         return Ok(pacientesDTO);
     }
 
@@ -35,11 +33,8 @@ public class PacientesController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetPacienteById(int id)
     {
-        var paciente = await _context.Pacientes.FindAsync(id);
-
-        if (paciente == null)
-            return NotFound();
-
+        Paciente paciente = await _context.Pacientes.FindAsync(id);
+        if (paciente == null) return NotFound();
         return Ok(PacienteMapper.ToDTO(paciente));
     }
 
@@ -47,13 +42,9 @@ public class PacientesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreatePacient([FromBody] PacienteCreateDTO dto)
     {
-        if (dto.DataNasc > DateOnly.FromDateTime(DateTime.Today))
-        {
-            return BadRequest(new { mensagem = "Data de nascimento não pode ser futura." });
-        }
+        if (dto.DataNasc > DateOnly.FromDateTime(DateTime.Today)) return BadRequest(new { mensagem = "Data de nascimento não pode ser futura." });
 
         Paciente paciente = PacienteMapper.ToModel(dto);
-
         _context.Pacientes.Add(paciente);
         await _context.SaveChangesAsync();
 
