@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace ApiClinica.DTOs;
 
-public class PacienteCreateDTO
+public class PacienteUpdateDTO
 {
     public required string Nome { get; set; }
 
