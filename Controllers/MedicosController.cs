@@ -68,6 +68,10 @@ public class MedicosController : ControllerBase
     {
         Medico medico = await _context.Medicos.FindAsync(id);
         if (medico == null) return NotFound();
+
+        bool temConsultaFutura = await _context.Consultas.AnyAsync(c => c.MedicoId == id && c.DataHora > DateTime.Now);
+        if (temConsultaFutura) return BadRequest(new { mensagem = "Não é possível excluir um médico com consultas futuras." });
+
         _context.Medicos.Remove(medico);
         await _context.SaveChangesAsync();
         return NoContent();

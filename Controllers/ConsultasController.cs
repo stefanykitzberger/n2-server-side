@@ -75,10 +75,14 @@ public class ConsultasController : ControllerBase
         Consulta consulta = await _context.Consultas.FindAsync(id);
         if (consulta == null) return NotFound();
 
-        bool precisaRevalidar = dto.PacienteId != consulta.PacienteId || dto.MedicoId != consulta.MedicoId || dto.DataHora != consulta.DataHora;
+        int pacienteId = dto.PacienteId ?? consulta.PacienteId;
+        int medicoId = dto.MedicoId ?? consulta.MedicoId;
+        DateTime dataHora = dto.DataHora ?? consulta.DataHora;
+
+        bool precisaRevalidar = pacienteId != consulta.PacienteId || medicoId != consulta.MedicoId || dataHora != consulta.DataHora;
         if (precisaRevalidar)
         {
-            string? erro = await ValidarConsulta(dto.PacienteId, dto.MedicoId, dto.DataHora, consultaIdExcluida: id);
+            string? erro = await ValidarConsulta(pacienteId, medicoId, dataHora, consultaIdExcluida: id);
             if (erro != null) return BadRequest(new { mensagem = erro });
         }
 

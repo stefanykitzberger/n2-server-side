@@ -4,6 +4,7 @@ using ApiClinica.Data;
 using Microsoft.EntityFrameworkCore;
 using ApiClinica.DTOs;
 using ApiClinica.Mappers;
+using ApiClinica.Validators;
 
 namespace ApiClinica.Controllers;
 
@@ -44,10 +45,12 @@ public class PacientesController : ControllerBase
     {
         if (dto.DataNasc > DateOnly.FromDateTime(DateTime.Today)) return BadRequest(new { mensagem = "Data de nascimento não pode ser futura." });
 
-        List<Paciente> pacientes = await _context.Pacientes.ToListAsync();
-        Paciente paciente = PacienteMapper.ToModel(dto);
-        if (pacientes.Any(p => p.Cpf == paciente.Cpf)) return BadRequest(new { mensagem = "Já existe um paciente com esse CPF cadastrado." });
+        if (!CpfValidator.IsValid(dto.Cpf)) return BadRequest(new { mensagem = "CPF inválido." });
 
+        bool cpfJaExiste = await _context.Pacientes.AnyAsync(p => p.Cpf == dto.Cpf);
+        if (cpfJaExiste) return BadRequest(new { mensagem = "Já existe um paciente com esse CPF cadastrado." });
+
+        Paciente paciente = PacienteMapper.ToModel(dto);
         _context.Pacientes.Add(paciente);
         await _context.SaveChangesAsync();
 
@@ -63,6 +66,9 @@ public class PacientesController : ControllerBase
         Paciente paciente = await _context.Pacientes.FindAsync(id);
         if (paciente == null) return NotFound();
 
+        bool temConsultaFutura = await _context.Consultas.AnyAsync(c => c.PacienteId == id && c.DataHora > DateTime.Now);
+        if (temConsultaFutura) return BadRequest(new { mensagem = "Não é possível excluir um paciente com consultas futuras." });
+
         _context.Pacientes.Remove(paciente);
         await _context.SaveChangesAsync();
 
@@ -76,14 +82,14 @@ public class PacientesController : ControllerBase
         Paciente paciente = await _context.Pacientes.FindAsync(id);
         if (paciente == null) return NotFound();
 
-        if (dto.DataNasc > DateOnly.FromDateTime(DateTime.Today)) 
+        if (dto.DataNasc != null && dto.DataNasc > DateOnly.FromDateTime(DateTime.Today))
             return BadRequest(new { mensagem = "Data de nascimento não pode ser futura." });
 
-        if (paciente.Cpf != dto.Cpf) return BadRequest(new { mensagem = "O CPF não pode ser alterado." });
+        if (dto.Cpf != null && dto.Cpf != paciente.Cpf) return BadRequest(new { mensagem = "O CPF não pode ser alterado." });
 
         PacienteMapper.UpdateModel(paciente, dto);
         await _context.SaveChangesAsync();
 
-        return Ok(PacienteMapper.ToDTO(paciente));1
+        return Ok(PacienteMapper.ToDTO(paciente));
     }
 }

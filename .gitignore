@@ -1,0 +1,25 @@
+# Build
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+*.dll
+*.exe
+*.pdb
+
+# Visual Studio / Rider / VS Code
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userprefs
+
+# Banco de dados SQLite (recriado pelas migrations no startup)
+*.db
+*.db-shm
+*.db-wal
+
+# Logs e arquivos temporários
+*.log
+*.tmp

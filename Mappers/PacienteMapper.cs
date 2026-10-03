@@ -17,6 +17,14 @@ public static class PacienteMapper
         };
     }
 
+    public static void UpdateModel(Paciente paciente, PacienteUpdateDTO dto)
+    {
+        if (dto.Nome != null) paciente.Nome = dto.Nome;
+        if (dto.Email != null) paciente.Email = dto.Email;
+        if (dto.Telefone != null) paciente.Telefone = dto.Telefone;
+        if (dto.DataNasc != null) paciente.DataNasc = dto.DataNasc.Value;
+    }
+
     public static PacienteReadDTO ToDTO(Paciente paciente)
     {
         return new PacienteReadDTO()
