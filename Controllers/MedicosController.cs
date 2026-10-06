@@ -74,6 +74,6 @@ public class MedicosController : ControllerBase
 
         _context.Medicos.Remove(medico);
         await _context.SaveChangesAsync();
-        return NoContent();
+        return Ok(new { mensagem = "Médico excluído com sucesso." });
     }
 }
