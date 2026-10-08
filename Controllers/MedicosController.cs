@@ -33,7 +33,7 @@ public class MedicosController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetMedicoById(int id)
     {
-        Medico medico = await _context.Medicos.FindAsync(id);
+        Medico? medico = await _context.Medicos.FindAsync(id);
         if (medico == null) return NotFound();
         return Ok(MedicoMapper.ToDTO(medico));
     }
@@ -55,7 +55,7 @@ public class MedicosController : ControllerBase
     [HttpPatch("{id}")]
     public async Task<IActionResult> UpdateMedico(int id, [FromBody] MedicoUpdateDTO dto)
     {
-        Medico medico = await _context.Medicos.FindAsync(id);
+        Medico? medico = await _context.Medicos.FindAsync(id);
         if (medico == null) return NotFound();
         MedicoMapper.Update(medico, dto);
         await _context.SaveChangesAsync();
@@ -66,7 +66,7 @@ public class MedicosController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteMedico(int id)
     {
-        Medico medico = await _context.Medicos.FindAsync(id);
+        Medico? medico = await _context.Medicos.FindAsync(id);
         if (medico == null) return NotFound();
 
         bool temConsultaFutura = await _context.Consultas.AnyAsync(c => c.MedicoId == id && c.DataHora > DateTime.Now);

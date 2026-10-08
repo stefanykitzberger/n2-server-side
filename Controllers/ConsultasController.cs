@@ -34,7 +34,7 @@ public class ConsultasController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetConsultaById(int id)
     {
-        Consulta consulta = await _context.Consultas.FindAsync(id);
+        Consulta? consulta = await _context.Consultas.FindAsync(id);
         if (consulta == null) return NotFound();
         return Ok(ConsultaMapper.ToDTO(consulta));
     }
@@ -46,11 +46,11 @@ public class ConsultasController : ControllerBase
         string? erro = await ValidarConsulta(dto.PacienteId, dto.MedicoId, dto.DataHora, consultaIdExcluida: null);
         if (erro != null) return BadRequest(new { mensagem = erro });
 
-        Consulta consulta = ConsultaMapper.ToModel(dto);
+        Consulta? consulta = ConsultaMapper.ToModel(dto);
         _context.Consultas.Add(consulta);
         await _context.SaveChangesAsync();
 
-        ConsultaReadDTO consultaDTO = ConsultaMapper.ToDTO(consulta);
+        ConsultaReadDTO? consultaDTO = ConsultaMapper.ToDTO(consulta);
 
         return CreatedAtAction(nameof(GetConsultaById), new { id = consulta.Id }, consultaDTO);
     }
@@ -59,7 +59,7 @@ public class ConsultasController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteConsulta(int id)
     {
-        Consulta consulta = await _context.Consultas.FindAsync(id);
+        Consulta? consulta = await _context.Consultas.FindAsync(id);
         if (consulta == null) return NotFound();
 
         _context.Consultas.Remove(consulta);
@@ -72,7 +72,7 @@ public class ConsultasController : ControllerBase
     [HttpPatch("{id}")]
     public async Task<IActionResult> UpdateConsulta(int id, [FromBody] ConsultaUpdateDTO dto)
     {
-        Consulta consulta = await _context.Consultas.FindAsync(id);
+        Consulta? consulta = await _context.Consultas.FindAsync(id);
         if (consulta == null) return NotFound();
 
         int pacienteId = dto.PacienteId ?? consulta.PacienteId;

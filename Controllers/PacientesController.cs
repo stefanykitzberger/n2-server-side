@@ -34,7 +34,7 @@ public class PacientesController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetPacienteById(int id)
     {
-        Paciente paciente = await _context.Pacientes.FindAsync(id);
+        Paciente? paciente = await _context.Pacientes.FindAsync(id);
         if (paciente == null) return NotFound();
         return Ok(PacienteMapper.ToDTO(paciente));
     }
@@ -63,7 +63,7 @@ public class PacientesController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeletePaciente(int id)
     {
-        Paciente paciente = await _context.Pacientes.FindAsync(id);
+        Paciente? paciente = await _context.Pacientes.FindAsync(id);
         if (paciente == null) return NotFound();
 
         bool temConsultaFutura = await _context.Consultas.AnyAsync(c => c.PacienteId == id && c.DataHora > DateTime.Now);
@@ -79,7 +79,7 @@ public class PacientesController : ControllerBase
     [HttpPatch("{id}")]
     public async Task<IActionResult> UpdatePaciente(int id, [FromBody] PacienteUpdateDTO dto)
     {
-        Paciente paciente = await _context.Pacientes.FindAsync(id);
+        Paciente? paciente = await _context.Pacientes.FindAsync(id);
         if (paciente == null) return NotFound();
 
         if (dto.DataNasc != null && dto.DataNasc > DateOnly.FromDateTime(DateTime.Today))
