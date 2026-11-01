@@ -1,4 +1,7 @@
 using ApiClinica.Data;
+using ApiClinica.Interfaces;
+using ApiClinica.Mappers;
+using ApiClinica.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +12,12 @@ builder.Services.AddEndpointsApiExplorer();
 // Adiciona o banco (SQLite)
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=clinica.db"));
+
+// Injeção de dependências: Mappers e Services
+builder.Services.AddScoped<IPacienteMapper, PacienteMapper>();
+builder.Services.AddScoped<IPacienteService, PacienteService>();
+builder.Services.AddScoped<IMedicoMapper, MedicoMapper>();
+builder.Services.AddScoped<IMedicoService, MedicoService>();
 
 var app = builder.Build();
 

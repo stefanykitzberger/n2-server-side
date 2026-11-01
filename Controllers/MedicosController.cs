@@ -1,9 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using ApiClinica.Models;
-using ApiClinica.Data;
-using Microsoft.EntityFrameworkCore;
 using ApiClinica.DTOs;
-using ApiClinica.Mappers;
+using ApiClinica.Exceptions;
+using ApiClinica.Interfaces;
 
 namespace ApiClinica.Controllers;
 
@@ -11,21 +9,18 @@ namespace ApiClinica.Controllers;
 [Route("api/[controller]")]
 public class MedicosController : ControllerBase
 {
-    private readonly AppDbContext _context;
+    private readonly IMedicoService _service;
 
-    public MedicosController(AppDbContext context)
+    public MedicosController(IMedicoService service)
     {
-        _context = context;
+        _service = service;
     }
 
     // GET: api/medicos
     [HttpGet]
     public async Task<IActionResult> GetMedicos()
     {
-        List<Medico> medicos = await _context.Medicos.ToListAsync();
-        List<MedicoReadDTO> medicosDTO = medicos
-            .Select(m => MedicoMapper.ToDTO(m))
-            .ToList();
+        List<MedicoReadDTO> medicosDTO = await _service.GetAllAsync();
         return Ok(medicosDTO);
     }
 
@@ -33,32 +28,25 @@ public class MedicosController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetMedicoById(int id)
     {
-        Medico? medico = await _context.Medicos.FindAsync(id);
-        if (medico == null) return NotFound();
-        return Ok(MedicoMapper.ToDTO(medico));
+        MedicoReadDTO? medicoDTO = await _service.GetByIdAsync(id);
+        if (medicoDTO == null) return NotFound();
+        return Ok(medicoDTO);
     }
 
     // POST: api/medicos
     [HttpPost]
     public async Task<IActionResult> CreateMedico([FromBody] MedicoCreateDTO dto)
     {
-        Medico medico = MedicoMapper.ToModel(dto);
-        _context.Medicos.Add(medico);
-        await _context.SaveChangesAsync();
-
-        MedicoReadDTO medicoDTO = MedicoMapper.ToDTO(medico);
-
-        return CreatedAtAction(nameof(GetMedicoById), new { id = medico.Id }, medicoDTO);
+        MedicoReadDTO medicoDTO = await _service.CreateAsync(dto);
+        return CreatedAtAction(nameof(GetMedicoById), new { id = medicoDTO.Id }, medicoDTO);
     }
     
     // PATCH: api/medicos/{id}
     [HttpPatch("{id}")]
     public async Task<IActionResult> UpdateMedico(int id, [FromBody] MedicoUpdateDTO dto)
     {
-        Medico? medico = await _context.Medicos.FindAsync(id);
-        if (medico == null) return NotFound();
-        MedicoMapper.Update(medico, dto);
-        await _context.SaveChangesAsync();
+        bool atualizado = await _service.UpdateAsync(id, dto);
+        if (!atualizado) return NotFound();
         return NoContent();
     }
 
@@ -66,14 +54,15 @@ public class MedicosController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteMedico(int id)
     {
-        Medico? medico = await _context.Medicos.FindAsync(id);
-        if (medico == null) return NotFound();
-
-        bool temConsultaFutura = await _context.Consultas.AnyAsync(c => c.MedicoId == id && c.DataHora > DateTime.Now);
-        if (temConsultaFutura) return BadRequest(new { mensagem = "Não é possível excluir um médico com consultas futuras." });
-
-        _context.Medicos.Remove(medico);
-        await _context.SaveChangesAsync();
-        return Ok(new { mensagem = "Médico excluído com sucesso." });
+        try
+        {
+            bool excluido = await _service.DeleteAsync(id);
+            if (!excluido) return NotFound();
+            return Ok(new { mensagem = "Médico excluído com sucesso." });
+        }
+        catch (RegraNegocioException ex)
+        {
+            return BadRequest(new { mensagem = ex.Message });
+        }
     }
 }
