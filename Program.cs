@@ -18,6 +18,8 @@ builder.Services.AddScoped<IPacienteMapper, PacienteMapper>();
 builder.Services.AddScoped<IPacienteService, PacienteService>();
 builder.Services.AddScoped<IMedicoMapper, MedicoMapper>();
 builder.Services.AddScoped<IMedicoService, MedicoService>();
+builder.Services.AddScoped<IConsultaMapper, ConsultaMapper>();
+builder.Services.AddScoped<IConsultaService, ConsultaService>();
 
 var app = builder.Build();
 

@@ -58,8 +58,6 @@ public class PacienteService : IPacienteService
         if (dto.DataNasc != null && dto.DataNasc > DateOnly.FromDateTime(DateTime.Today))
             throw new RegraNegocioException("Data de nascimento não pode ser futura.");
 
-        if (dto.Cpf != null && dto.Cpf != paciente.Cpf) throw new RegraNegocioException("O CPF não pode ser alterado.");
-
         _mapper.UpdateModel(paciente, dto);
         await _context.SaveChangesAsync();
 

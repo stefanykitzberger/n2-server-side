@@ -13,7 +13,5 @@ public class PacienteUpdateDTO
     public string? Telefone { get; set; }
 
     public DateOnly? DataNasc { get; set; }
-
-    [RegularExpression(@"^\d{11}$", ErrorMessage = "CPF deve conter 11 dígitos numéricos.")]
-    public string? Cpf { get; set; }
+    
 }

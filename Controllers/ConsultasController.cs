@@ -1,9 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using ApiClinica.Models;
-using ApiClinica.Data;
-using Microsoft.EntityFrameworkCore;
 using ApiClinica.DTOs;
-using ApiClinica.Mappers;
+using ApiClinica.Exceptions;
+using ApiClinica.Interfaces;
 
 namespace ApiClinica.Controllers;
 
@@ -11,22 +9,18 @@ namespace ApiClinica.Controllers;
 [Route("api/[controller]")]
 public class ConsultasController : ControllerBase
 {
-    private const int DuracaoConsultaMinutos = 30;
-    private readonly AppDbContext _context;
+    private readonly IConsultaService _service;
 
-    public ConsultasController(AppDbContext context)
+    public ConsultasController(IConsultaService service)
     {
-        _context = context;
+        _service = service;
     }
 
     // GET: api/consultas
     [HttpGet]
     public async Task<IActionResult> GetConsultas()
     {
-        List<Consulta> consultas = await _context.Consultas.ToListAsync();
-        List<ConsultaReadDTO> consultasDTO = consultas
-            .Select(c => ConsultaMapper.ToDTO(c))
-            .ToList();
+        List<ConsultaReadDTO> consultasDTO = await _service.GetAllAsync();
         return Ok(consultasDTO);
     }
 
@@ -34,89 +28,48 @@ public class ConsultasController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetConsultaById(int id)
     {
-        Consulta? consulta = await _context.Consultas.FindAsync(id);
-        if (consulta == null) return NotFound();
-        return Ok(ConsultaMapper.ToDTO(consulta));
+        ConsultaReadDTO? consultaDTO = await _service.GetByIdAsync(id);
+        if (consultaDTO == null) return NotFound();
+        return Ok(consultaDTO);
     }
 
     // POST: api/consultas
     [HttpPost]
     public async Task<IActionResult> CreateConsulta([FromBody] ConsultaCreateDTO dto)
     {
-        string? erro = await ValidarConsulta(dto.PacienteId, dto.MedicoId, dto.DataHora, consultaIdExcluida: null);
-        if (erro != null) return BadRequest(new { mensagem = erro });
-
-        Consulta? consulta = ConsultaMapper.ToModel(dto);
-        _context.Consultas.Add(consulta);
-        await _context.SaveChangesAsync();
-
-        ConsultaReadDTO? consultaDTO = ConsultaMapper.ToDTO(consulta);
-
-        return CreatedAtAction(nameof(GetConsultaById), new { id = consulta.Id }, consultaDTO);
-    }
-
-    // DELETE: api/consultas/{id}
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteConsulta(int id)
-    {
-        Consulta? consulta = await _context.Consultas.FindAsync(id);
-        if (consulta == null) return NotFound();
-
-        _context.Consultas.Remove(consulta);
-        await _context.SaveChangesAsync();
-
-        return Ok(new { mensagem = "Consulta excluída com sucesso." });
+        try
+        {
+            ConsultaReadDTO consultaDTO = await _service.CreateAsync(dto);
+            return CreatedAtAction(nameof(GetConsultaById), new { id = consultaDTO.Id }, consultaDTO);
+        }
+        catch (RegraNegocioException ex)
+        {
+            return BadRequest(new { mensagem = ex.Message });
+        }
     }
 
     // PATCH: api/consultas/{id}
     [HttpPatch("{id}")]
     public async Task<IActionResult> UpdateConsulta(int id, [FromBody] ConsultaUpdateDTO dto)
     {
-        Consulta? consulta = await _context.Consultas.FindAsync(id);
-        if (consulta == null) return NotFound();
-
-        int pacienteId = dto.PacienteId ?? consulta.PacienteId;
-        int medicoId = dto.MedicoId ?? consulta.MedicoId;
-        DateTime dataHora = dto.DataHora ?? consulta.DataHora;
-
-        bool precisaRevalidar = pacienteId != consulta.PacienteId || medicoId != consulta.MedicoId || dataHora != consulta.DataHora;
-        if (precisaRevalidar)
+        try
         {
-            string? erro = await ValidarConsulta(pacienteId, medicoId, dataHora, consultaIdExcluida: id);
-            if (erro != null) return BadRequest(new { mensagem = erro });
+            ConsultaReadDTO? consultaDTO = await _service.UpdateAsync(id, dto);
+            if (consultaDTO == null) return NotFound();
+            return Ok(consultaDTO);
         }
-
-        ConsultaMapper.UpdateModel(consulta, dto);
-        await _context.SaveChangesAsync();
-
-        return Ok(ConsultaMapper.ToDTO(consulta));
+        catch (RegraNegocioException ex)
+        {
+            return BadRequest(new { mensagem = ex.Message });
+        }
     }
 
-    private async Task<string?> ValidarConsulta(int pacienteId, int medicoId, DateTime dataHora, int? consultaIdExcluida)
+    // DELETE: api/consultas/{id}
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteConsulta(int id)
     {
-        if (!await _context.Pacientes.AnyAsync(p => p.Id == pacienteId)) 
-            return "Paciente informado não existe.";
-
-        if (!await _context.Medicos.AnyAsync(m => m.Id == medicoId)) 
-            return "Médico informado não existe.";
-
-        if (dataHora < DateTime.Now) 
-            return "Não é possível agendar consulta no passado.";
-
-        DateTime inicioJanela = dataHora.AddMinutes(-DuracaoConsultaMinutos);
-        DateTime fimJanela = dataHora.AddMinutes(DuracaoConsultaMinutos);
-
-        IQueryable<Consulta> consultasNaJanela = _context.Consultas.Where(c => c.DataHora > inicioJanela && c.DataHora < fimJanela);
-
-        if (consultaIdExcluida.HasValue)
-            consultasNaJanela = consultasNaJanela.Where(c => c.Id != consultaIdExcluida.Value);
-
-        if (await consultasNaJanela.AnyAsync(c => c.MedicoId == medicoId))
-            return "Já existe uma consulta sobreposta para este médico neste horário.";
-
-        if (await consultasNaJanela.AnyAsync(c => c.PacienteId == pacienteId))
-            return "Já existe uma consulta sobreposta para este paciente neste horário.";
-
-        return null;
+        bool excluido = await _service.DeleteAsync(id);
+        if (!excluido) return NotFound();
+        return Ok(new { mensagem = "Consulta excluída com sucesso." });
     }
 }
