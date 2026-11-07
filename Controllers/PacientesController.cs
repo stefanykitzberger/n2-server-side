@@ -1,10 +1,14 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ApiClinica.DTOs;
 using ApiClinica.Exceptions;
 using ApiClinica.Interfaces;
+using ApiClinica.Models;
 
 namespace ApiClinica.Controllers;
 
+// Todos os endpoints exigem token JWT válido (usuário comum ou admin).
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class PacientesController : ControllerBase
@@ -49,6 +53,7 @@ public class PacientesController : ControllerBase
     }
 
     // DELETE: api/pacientes/{id}
+    [Authorize(Roles = Roles.Admin)]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeletePaciente(int id)
     {
@@ -65,6 +70,7 @@ public class PacientesController : ControllerBase
     }
 
     // PATCH: api/pacientes/{id}
+    [Authorize(Roles = Roles.Admin)]
     [HttpPatch("{id}")]
     public async Task<IActionResult> UpdatePaciente(int id, [FromBody] PacienteUpdateDTO dto)
     {
